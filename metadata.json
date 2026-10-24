@@ -1,0 +1,8 @@
+{
+  "name": "Exam-Pulse — Online Examination Portal",
+  "description": "A secure, full-stack examination portal for students and administrators featuring live exams, timer enforcement, instant grading, and analytics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
