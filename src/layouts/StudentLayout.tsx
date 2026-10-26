@@ -76,10 +76,22 @@ export const StudentLayout: React.FC = () => {
         {/* Portal info badge */}
         <div className="p-3.5 mb-4 rounded-xl bg-slate-900/80 border border-slate-800 text-xs text-slate-400 space-y-1">
           <div className="flex items-center gap-1.5 text-cyan-400 font-semibold">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Active Student Portal</span>
+            {user?.authProvider === 'google' ? (
+              <span className="inline-flex items-center gap-1 text-emerald-400">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Google Account
+              </span>
+            ) : (
+              <>
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Active Student Portal</span>
+              </>
+            )}
           </div>
-          <p className="text-[11px] text-slate-400">ID: {user?.codeId || 'STU-2024'}</p>
+          <p className="text-[11px] text-slate-400 truncate">ID: {user?.codeId || 'STU-2024'}</p>
+          {user?.email && (
+            <p className="text-[10px] text-slate-500 font-mono truncate">{user.email}</p>
+          )}
         </div>
 
         {/* Logout */}

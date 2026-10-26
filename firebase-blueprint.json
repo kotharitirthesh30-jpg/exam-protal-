@@ -1,0 +1,122 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Registered examination candidate or administrator account.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "codeId": { "type": "string" },
+        "role": { "type": "string", "enum": ["student", "admin"] },
+        "department": { "type": "string" },
+        "year": { "type": "string" },
+        "division": { "type": "string" },
+        "title": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "inactive"] },
+        "avatarUrl": { "type": "string" },
+        "authProvider": { "type": "string", "enum": ["password", "google"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "email", "codeId", "role", "status", "createdAt"]
+    },
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Authorization record granting administrator privileges.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["admin"] },
+        "authorizedAt": { "type": "string" }
+      },
+      "required": ["email", "role"]
+    },
+    "Exam": {
+      "title": "Exam",
+      "description": "Examination metadata, configuration, and schedule.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "subject": { "type": "string" },
+        "description": { "type": "string" },
+        "durationMinutes": { "type": "number" },
+        "totalMarks": { "type": "number" },
+        "passingMarks": { "type": "number" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "isPublished": { "type": "boolean" },
+        "negativeMarking": { "type": "boolean" },
+        "createdBy": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "title", "subject", "durationMinutes", "totalMarks", "passingMarks"]
+    },
+    "ExamResult": {
+      "title": "ExamResult",
+      "description": "Persisted student submission and evaluated examination result.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "attemptId": { "type": "string" },
+        "examId": { "type": "string" },
+        "examTitle": { "type": "string" },
+        "subject": { "type": "string" },
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "studentCodeId": { "type": "string" },
+        "totalMarks": { "type": "number" },
+        "marksObtained": { "type": "number" },
+        "percentage": { "type": "number" },
+        "passed": { "type": "boolean" },
+        "correctCount": { "type": "number" },
+        "incorrectCount": { "type": "number" },
+        "unattemptedCount": { "type": "number" },
+        "timeSpentSeconds": { "type": "number" },
+        "submittedAt": { "type": "string" },
+        "isPublished": { "type": "boolean" }
+      },
+      "required": ["id", "examId", "studentId", "totalMarks", "marksObtained", "submittedAt"]
+    },
+    "ProctorLog": {
+      "title": "ProctorLog",
+      "description": "Audit event recorded during examination monitoring.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "attemptId": { "type": "string" },
+        "examId": { "type": "string" },
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "type": { "type": "string" },
+        "message": { "type": "string" },
+        "severity": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "examId", "studentId", "type", "severity", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User account profiles."
+    },
+    "/admins/{adminId}": {
+      "schema": "AdminRecord",
+      "description": "Designated administrator authorizations."
+    },
+    "/exams/{examId}": {
+      "schema": "Exam",
+      "description": "Scheduled assessments and configurations."
+    },
+    "/exam_results/{resultId}": {
+      "schema": "ExamResult",
+      "description": "Graded examination attempts."
+    },
+    "/proctor_logs/{logId}": {
+      "schema": "ProctorLog",
+      "description": "Proctoring violation events and security logs."
+    }
+  }
+}

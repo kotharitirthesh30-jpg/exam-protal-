@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { OrbitLogo } from '../components/OrbitLogo.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import { Eye, EyeOff, Lock, User, AlertCircle, ArrowLeft, Sparkles, GraduationCap } from 'lucide-react';
+import { GoogleSignInButton } from '../components/GoogleSignInButton.tsx';
+import { GoogleSignInModal } from '../components/GoogleSignInModal.tsx';
 
 export const StudentLogin: React.FC = () => {
   const { login } = useAuth();
@@ -14,6 +16,7 @@ export const StudentLogin: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,6 +93,25 @@ export const StudentLogin: React.FC = () => {
               <span>{error}</span>
             </div>
           )}
+
+          {/* Google Sign-In Button */}
+          <div className="mb-6 space-y-4">
+            <GoogleSignInButton
+              onClick={() => setShowGoogleModal(true)}
+              label="Sign in with Google"
+            />
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-800" />
+              </div>
+              <div className="relative flex justify-center text-[11px] uppercase tracking-wider">
+                <span className="bg-[#0e1628] px-3 text-slate-500 font-semibold">
+                  Or continue with student credentials
+                </span>
+              </div>
+            </div>
+          </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -196,6 +218,11 @@ export const StudentLogin: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <GoogleSignInModal
+        isOpen={showGoogleModal}
+        onClose={() => setShowGoogleModal(false)}
+      />
     </div>
   );
 };

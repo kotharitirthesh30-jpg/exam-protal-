@@ -28,7 +28,9 @@ import { AdminLayout } from './layouts/AdminLayout.tsx';
 // Protected Route Guard for Students
 const StudentRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
-  if (loading) {
+  const hasToken = Boolean(localStorage.getItem('orbit_token'));
+
+  if (loading || (hasToken && !user)) {
     return (
       <div className="min-h-screen bg-[#070b14] flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
@@ -47,7 +49,9 @@ const StudentRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 // Protected Route Guard for Administrators
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
-  if (loading) {
+  const hasToken = Boolean(localStorage.getItem('orbit_token'));
+
+  if (loading || (hasToken && !user)) {
     return (
       <div className="min-h-screen bg-[#070b14] flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />
@@ -62,6 +66,7 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   }
   return <>{children}</>;
 };
+
 
 export default function App() {
   return (

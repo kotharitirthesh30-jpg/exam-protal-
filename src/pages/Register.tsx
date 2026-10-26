@@ -3,10 +3,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { OrbitLogo } from '../components/OrbitLogo.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import { User, Mail, Hash, Lock, Building, AlertCircle, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { GoogleSignInButton } from '../components/GoogleSignInButton.tsx';
+import { GoogleSignInModal } from '../components/GoogleSignInModal.tsx';
 
 export const Register: React.FC = () => {
   const { register } = useAuth();
   const navigate = useNavigate();
+  const [showGoogleModal, setShowGoogleModal] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -98,6 +101,25 @@ export const Register: React.FC = () => {
               <span>{error}</span>
             </div>
           )}
+
+          {/* Google 1-Click Registration */}
+          <div className="mb-6 space-y-4">
+            <GoogleSignInButton
+              onClick={() => setShowGoogleModal(true)}
+              label="Sign up with Google Account"
+            />
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-slate-800" />
+              </div>
+              <div className="relative flex justify-center text-[11px] uppercase tracking-wider">
+                <span className="bg-[#0e1628] px-3 text-slate-500 font-semibold">
+                  Or register with institutional ID
+                </span>
+              </div>
+            </div>
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -252,6 +274,11 @@ export const Register: React.FC = () => {
           </form>
         </div>
       </div>
+
+      <GoogleSignInModal
+        isOpen={showGoogleModal}
+        onClose={() => setShowGoogleModal(false)}
+      />
     </div>
   );
 };

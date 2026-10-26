@@ -124,6 +124,143 @@ router.post('/auth/login', (req, res) => {
   });
 });
 
+router.post('/auth/google', (req, res) => {
+  const { email, name, googleId, avatarUrl, expectedRole } = req.body;
+  if (!email || typeof email !== 'string') {
+    return res.status(400).json({ error: 'Google account email is required.' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  let user = OrbitDB.getUsers().find((u) => u.email.toLowerCase() === cleanEmail);
+
+  // Designated admin emails or explicitly logging in from Admin portal
+  const isAdminEmail = 
+    cleanEmail === 'kotharitirthesh30@gmail.com' ||
+    cleanEmail.startsWith('admin@') ||
+    (user && user.role === 'admin');
+
+  const shouldBeAdmin = expectedRole === 'admin' || isAdminEmail;
+
+  if (!user) {
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const salt = bcrypt.genSaltSync(10);
+    const defaultHash = bcrypt.hashSync(`google_${Date.now()}`, salt);
+
+    if (shouldBeAdmin) {
+      user = {
+        id: `usr_admin_${Date.now()}`,
+        name: (name && typeof name === 'string' && name.trim()) || 'Admin User',
+        email: cleanEmail,
+        codeId: cleanEmail === 'kotharitirthesh30@gmail.com' ? 'ADM-KOTHARI' : `ADM-G-${randomSuffix}`,
+        passwordHash: defaultHash,
+        role: 'admin',
+        title: cleanEmail === 'kotharitirthesh30@gmail.com' ? 'Chief Examination Controller' : 'Academic Coordinator',
+        department: 'Academic & Examination Council',
+        status: 'active',
+        avatarUrl: typeof avatarUrl === 'string' ? avatarUrl : undefined,
+        authProvider: 'google',
+        createdAt: new Date().toISOString(),
+      };
+    } else {
+      user = {
+        id: `usr_google_${Date.now()}`,
+        name: (name && typeof name === 'string' && name.trim()) || cleanEmail.split('@')[0],
+        email: cleanEmail,
+        codeId: `STU-G-${randomSuffix}`,
+        passwordHash: defaultHash,
+        role: 'student',
+        department: 'Computer Science & Engineering',
+        year: '3rd Year',
+        division: 'Division A',
+        status: 'active',
+        avatarUrl: typeof avatarUrl === 'string' ? avatarUrl : undefined,
+        authProvider: 'google',
+        createdAt: new Date().toISOString(),
+      };
+    }
+
+    OrbitDB.createUser(user);
+  } else {
+    // If existing user is signing in via Admin portal or is designated admin, ensure admin role
+    const updates: Partial<User> = {};
+    if (shouldBeAdmin && user.role !== 'admin') {
+      updates.role = 'admin';
+      updates.title = updates.title || 'Academic Coordinator';
+    }
+    if (avatarUrl && !user.avatarUrl) {
+      updates.avatarUrl = avatarUrl;
+    }
+    if (!user.authProvider) {
+      updates.authProvider = 'google';
+    }
+    if (Object.keys(updates).length > 0) {
+      OrbitDB.updateUser(user.id, updates);
+    }
+  }
+
+  if (user.status !== 'active') {
+    return res.status(403).json({ error: 'Your account has been deactivated. Please contact administrator.' });
+  }
+
+  const token = jwt.sign({ id: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+
+  res.json({
+    token,
+    user: sanitizeUser(user),
+  });
+});
+
+// Route to register/add any new Administrator login
+router.post('/auth/admin/register', (req, res) => {
+  const { name, email, codeId, password, title, department } = req.body;
+
+  if (!name || !email || !codeId || !password) {
+    return res.status(400).json({ error: 'Admin Name, Email, Admin ID, and Password are required.' });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Password must be at least 6 characters long.' });
+  }
+
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanCode = codeId.trim().toUpperCase();
+
+  const existing = OrbitDB.getUsers().find(
+    (u) => u.email.toLowerCase() === cleanEmail || u.codeId.toUpperCase() === cleanCode
+  );
+
+  if (existing) {
+    return res.status(409).json({ error: 'An administrator or user with this email or Admin ID already exists.' });
+  }
+
+  const salt = bcrypt.genSaltSync(10);
+  const passwordHash = bcrypt.hashSync(password, salt);
+
+  const newAdmin: User = {
+    id: `usr_admin_${Date.now()}`,
+    name: name.trim(),
+    email: cleanEmail,
+    codeId: cleanCode,
+    passwordHash,
+    role: 'admin',
+    title: title?.trim() || 'Academic Administrator',
+    department: department?.trim() || 'Examination Operations',
+    status: 'active',
+    authProvider: 'password',
+    createdAt: new Date().toISOString(),
+  };
+
+  OrbitDB.createUser(newAdmin);
+
+  const token = jwt.sign({ id: newAdmin.id, role: newAdmin.role }, JWT_SECRET, { expiresIn: '7d' });
+
+  res.status(201).json({
+    message: 'New administrator login registered successfully.',
+    token,
+    user: sanitizeUser(newAdmin),
+  });
+});
+
 router.post('/auth/register', (req, res) => {
   const { name, email, codeId, password, department, year, division } = req.body;
 
@@ -349,6 +486,23 @@ router.delete('/exams/:id', authenticate, requireAdmin, (req: AuthRequest, res) 
     return res.status(404).json({ error: 'Examination not found.' });
   }
   res.json({ message: 'Examination deleted successfully.' });
+});
+
+router.post('/admin/exams/sample', authenticate, requireAdmin, (req: AuthRequest, res) => {
+  const creatorName = req.user?.name || 'Administrator';
+  const newExam = OrbitDB.seedSampleExam(creatorName);
+  res.status(201).json({
+    message: 'Sample assessment created successfully.',
+    exam: newExam,
+  });
+});
+
+router.post('/admin/exams/clear-all', authenticate, requireAdmin, (_req: AuthRequest, res) => {
+  const count = OrbitDB.getExams().length;
+  while (OrbitDB.getExams().length > 0) {
+    OrbitDB.getExams().pop();
+  }
+  res.json({ message: `All ${count} examinations cleared.` });
 });
 
 // ---------------- EXAM ATTEMPT & TAKING SYSTEM ----------------

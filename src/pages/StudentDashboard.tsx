@@ -129,10 +129,10 @@ export const StudentDashboard: React.FC = () => {
             </div>
           </div>
           <div className="text-3xl font-extrabold text-white">
-            {completedExams.length > 0 ? `${avgScore}%` : 'N/A'}
+            {completedExams.length > 0 ? `${avgScore}%` : '0%'}
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            {completedExams.length > 0 ? 'Across completed exams' : 'Take exams to view score'}
+            {completedExams.length > 0 ? 'Across completed exams' : '0 exams completed (0% score)'}
           </p>
           <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-amber-500/5 rounded-full blur-xl" />
         </div>

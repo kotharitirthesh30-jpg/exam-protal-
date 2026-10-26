@@ -11,6 +11,8 @@ export interface User {
   division?: string;
   title?: string;
   status: 'active' | 'inactive';
+  avatarUrl?: string;
+  authProvider?: 'password' | 'google';
   createdAt: string;
 }
 
@@ -130,6 +132,29 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(credentials),
     }),
+  loginWithGoogle: (googleData: {
+    email: string;
+    name: string;
+    googleId?: string;
+    avatarUrl?: string;
+    expectedRole?: 'student' | 'admin';
+  }) =>
+    fetchWithAuth('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify(googleData),
+    }),
+  registerAdmin: (adminData: {
+    name: string;
+    email: string;
+    codeId: string;
+    password: string;
+    title?: string;
+    department?: string;
+  }) =>
+    fetchWithAuth('/auth/admin/register', {
+      method: 'POST',
+      body: JSON.stringify(adminData),
+    }),
   register: (studentData: any) =>
     fetchWithAuth('/auth/register', {
       method: 'POST',
@@ -158,6 +183,14 @@ export const api = {
   deleteExam: (id: string) =>
     fetchWithAuth(`/exams/${id}`, {
       method: 'DELETE',
+    }),
+  createSampleExam: () =>
+    fetchWithAuth('/admin/exams/sample', {
+      method: 'POST',
+    }),
+  clearAllExams: () =>
+    fetchWithAuth('/admin/exams/clear-all', {
+      method: 'POST',
     }),
 
   // Attempts

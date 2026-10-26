@@ -105,7 +105,7 @@ export const StudentResults: React.FC = () => {
         <div className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800">
           <span className="text-xs text-slate-400 font-semibold block">Pass Rate</span>
           <div className="text-3xl font-extrabold text-emerald-400 mt-1">
-            {totalExams > 0 ? `${Math.round((passedCount / totalExams) * 100)}%` : 'N/A'}
+            {totalExams > 0 ? `${Math.round((passedCount / totalExams) * 100)}%` : '0%'}
           </div>
           <span className="text-xs text-slate-500 mt-0.5 block">
             {passedCount} of {totalExams} examinations passed
@@ -115,7 +115,7 @@ export const StudentResults: React.FC = () => {
         <div className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800">
           <span className="text-xs text-slate-400 font-semibold block">Cumulative Average</span>
           <div className="text-3xl font-extrabold text-cyan-400 mt-1">
-            {totalExams > 0 ? `${avgScore}%` : 'N/A'}
+            {totalExams > 0 ? `${avgScore}%` : '0%'}
           </div>
           <span className="text-xs text-slate-500 mt-0.5 block">Overall academic percentage</span>
         </div>
@@ -138,7 +138,9 @@ export const StudentResults: React.FC = () => {
         <div className="p-12 text-center text-slate-400 border border-dashed border-slate-800 rounded-3xl bg-slate-950/40">
           <Award className="w-10 h-10 mx-auto mb-3 text-slate-600" />
           <p className="text-base font-medium text-slate-300">No examination results recorded yet.</p>
-          <p className="text-xs text-slate-500 mt-1">Take an available examination from the portal to view your grade.</p>
+          <p className="text-xs text-slate-500 mt-1">
+            0 examinations evaluated (0% score). Start an assessment from the Exams catalog to earn and view your genuine scorecard.
+          </p>
         </div>
       ) : (
         <div className="rounded-3xl bg-slate-900/70 border border-slate-800/90 overflow-hidden shadow-xl">

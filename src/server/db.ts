@@ -14,6 +14,8 @@ export interface User {
   division?: string;
   title?: string; // e.g. "Exam Controller"
   status: 'active' | 'inactive';
+  avatarUrl?: string;
+  authProvider?: 'password' | 'google';
   createdAt: string;
 }
 
@@ -121,8 +123,51 @@ export function initializeDatabase() {
     try {
       const content = fs.readFileSync(DB_FILE, 'utf-8');
       db = JSON.parse(content);
+      const FAKE_EXAM_IDS = ['exam_cn_quiz2', 'exam_ds_unit3', 'exam_os_midsem', 'exam_dbms_final'];
+      const FAKE_STUDENT_IDS = ['usr_student_1', 'usr_student_2', 'usr_student_3', 'usr_student_4'];
+
+      // Ensure fake seed results or attempts are completely purged
+      if (db.results) {
+        db.results = db.results.filter(
+          (r) => r.id !== 'res_seed_1' && !FAKE_EXAM_IDS.includes(r.examId)
+        );
+      }
+      if (db.attempts) {
+        db.attempts = db.attempts.filter(
+          (a) => a.id !== 'att_seed_1' && !FAKE_EXAM_IDS.includes(a.examId)
+        );
+      }
+      // Ensure fake exams and fake students are completely purged
+      if (db.exams) {
+        db.exams = db.exams.filter((e) => !FAKE_EXAM_IDS.includes(e.id));
+      }
+      if (db.users) {
+        db.users = db.users.filter((u) => !FAKE_STUDENT_IDS.includes(u.id));
+      }
+
       // Verify we have seed users
       if (db.users && db.users.length > 0) {
+        // Guarantee kotharitirthesh30@gmail.com is present as admin
+        const hasTirthesh = db.users.some(
+          (u) => u.email.toLowerCase() === 'kotharitirthesh30@gmail.com'
+        );
+        if (!hasTirthesh) {
+          const salt = bcrypt.genSaltSync(10);
+          db.users.push({
+            id: 'usr_admin_kothari',
+            name: 'Tirthesh Kothari',
+            email: 'kotharitirthesh30@gmail.com',
+            codeId: 'ADM-KOTHARI',
+            passwordHash: bcrypt.hashSync('admin123', salt),
+            role: 'admin',
+            title: 'Chief Administrator & Controller',
+            department: 'Academic Affairs & Examination Board',
+            status: 'active',
+            authProvider: 'google',
+            createdAt: new Date().toISOString(),
+          });
+        }
+        saveDatabase();
         return;
       }
     } catch {
@@ -135,6 +180,19 @@ export function initializeDatabase() {
   const adminPasswordHash = bcrypt.hashSync('admin123', salt);
 
   const initialUsers: User[] = [
+    {
+      id: 'usr_admin_kothari',
+      name: 'Tirthesh Kothari',
+      email: 'kotharitirthesh30@gmail.com',
+      codeId: 'ADM-KOTHARI',
+      passwordHash: adminPasswordHash,
+      role: 'admin',
+      title: 'Chief Administrator & Controller',
+      department: 'Academic Affairs & Examination Board',
+      status: 'active',
+      authProvider: 'google',
+      createdAt: new Date('2026-01-01T00:00:00Z').toISOString(),
+    },
     {
       id: 'usr_admin_1',
       name: 'Dr. Priya Nair',
@@ -539,68 +597,14 @@ export function initializeDatabase() {
     },
   ];
 
-  // Seed one completed exam result for student Aarav Mehta
-  const seededResult: ExamResult = {
-    id: 'res_seed_1',
-    attemptId: 'att_seed_1',
-    examId: 'exam_dbms_final',
-    examTitle: 'Database Management Systems - Relational Algebra & SQL',
-    subject: 'Database Systems',
-    studentId: 'usr_student_1',
-    studentName: 'Aarav Mehta',
-    studentCodeId: 'STU-2024-001',
-    totalMarks: 4,
-    marksObtained: 4,
-    percentage: 100,
-    passed: true,
-    correctCount: 2,
-    incorrectCount: 0,
-    unattemptedCount: 0,
-    timeSpentSeconds: 420, // 7 minutes
-    submittedAt: new Date('2026-10-20T14:35:00Z').toISOString(),
-    isPublished: true,
-    questionBreakdown: [
-      {
-        questionId: 'q_db_1',
-        questionText: dbmsQuestions[0].text,
-        options: dbmsQuestions[0].options,
-        studentAnswer: 0,
-        correctAnswer: 0,
-        isCorrect: true,
-        marksAwarded: 2,
-        explanation: dbmsQuestions[0].explanation,
-      },
-      {
-        questionId: 'q_db_2',
-        questionText: dbmsQuestions[1].text,
-        options: dbmsQuestions[1].options,
-        studentAnswer: 2,
-        correctAnswer: 2,
-        isCorrect: true,
-        marksAwarded: 2,
-        explanation: dbmsQuestions[1].explanation,
-      },
-    ],
-  };
-
+  // Clean slate: 0 fake exams, 0 fake attempts, 0 fake results
+  // Real exams are created by administrator, and real results are generated when students take exams.
   db = {
     users: initialUsers,
-    exams: initialExams,
+    exams: [],
     questionBank: [...cnQuestions, ...dsQuestions, ...osQuestions, ...dbmsQuestions],
-    attempts: [
-      {
-        id: 'att_seed_1',
-        examId: 'exam_dbms_final',
-        studentId: 'usr_student_1',
-        studentName: 'Aarav Mehta',
-        startTime: new Date('2026-10-20T14:28:00Z').toISOString(),
-        expiresAt: new Date('2026-10-20T14:43:00Z').toISOString(),
-        answers: { q_db_1: 0, q_db_2: 2 },
-        status: 'submitted',
-        submittedAt: new Date('2026-10-20T14:35:00Z').toISOString(),
-      },
-    ],
-    results: [seededResult],
+    attempts: [],
+    results: [],
   };
 
   saveDatabase();
@@ -705,5 +709,34 @@ export const OrbitDB = {
     db.results.push(result);
     saveDatabase();
     return result;
+  },
+  seedSampleExam: (creatorName: string = 'Tirthesh Kothari') => {
+    const sampleQuestions = db.questionBank.slice(0, 5);
+    const sampleExam: Exam = {
+      id: `exam_${Date.now()}`,
+      title: 'Computer Networks & Systems Assessment',
+      subject: 'Computer Science',
+      description: 'Institutional examination covering network topology, transport protocols, and data structures.',
+      instructions: [
+        'Total duration is 30 minutes.',
+        'Objective multi-choice format.',
+        'Each question carries 2 marks.',
+        'Passing marks required: 5 out of 10 marks.',
+        'Full-screen monitoring and proctoring enabled.',
+      ],
+      durationMinutes: 30,
+      totalMarks: 10,
+      passingMarks: 5,
+      startDate: new Date(Date.now() - 3600000).toISOString(),
+      endDate: new Date(Date.now() + 86400000 * 14).toISOString(),
+      isPublished: true,
+      negativeMarking: true,
+      questions: sampleQuestions,
+      createdBy: creatorName,
+      createdAt: new Date().toISOString(),
+    };
+    db.exams.push(sampleExam);
+    saveDatabase();
+    return sampleExam;
   },
 };
