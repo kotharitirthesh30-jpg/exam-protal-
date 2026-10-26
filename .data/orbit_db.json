@@ -52,6 +52,20 @@
       "status": "active",
       "authProvider": "password",
       "createdAt": "2026-10-26T11:49:49.859Z"
+    },
+    {
+      "id": "usr_student_1793017191265",
+      "name": "Tirthesh Kothari",
+      "email": "kotharitirthesh30@gmail.com",
+      "codeId": "STU-G-6428",
+      "passwordHash": "$2b$10$PW3eqoiumDnGgx71WItgL.wgj4HmiuJS7mLr7BthGKPF.ZrAqidXO",
+      "role": "student",
+      "department": "Computer Science & Engineering",
+      "year": "3rd Year",
+      "division": "Division A",
+      "status": "active",
+      "authProvider": "google",
+      "createdAt": "2026-10-26T12:19:51.265Z"
     }
   ],
   "exams": [],

@@ -131,22 +131,24 @@ router.post('/auth/google', (req, res) => {
   }
 
   const cleanEmail = email.trim().toLowerCase();
-  let user = OrbitDB.getUsers().find((u) => u.email.toLowerCase() === cleanEmail);
 
-  // Designated admin emails or explicitly logging in from Admin portal
-  const isAdminEmail = 
-    cleanEmail === 'kotharitirthesh30@gmail.com' ||
-    cleanEmail.startsWith('admin@') ||
-    (user && user.role === 'admin');
+  // Strict role separation:
+  // If user is logging in from the Admin portal (expectedRole === 'admin'), authenticate as admin.
+  // If user is logging in from Student login (expectedRole === 'student' or omitted), authenticate strictly as student.
+  const isAdminLogin = expectedRole === 'admin';
+  const targetRole: 'admin' | 'student' = isAdminLogin ? 'admin' : 'student';
 
-  const shouldBeAdmin = expectedRole === 'admin' || isAdminEmail;
+  // Find user with exact target role
+  let user = OrbitDB.getUsers().find(
+    (u) => u.email.toLowerCase() === cleanEmail && u.role === targetRole
+  );
 
   if (!user) {
     const randomSuffix = Math.floor(1000 + Math.random() * 9000);
     const salt = bcrypt.genSaltSync(10);
     const defaultHash = bcrypt.hashSync(`google_${Date.now()}`, salt);
 
-    if (shouldBeAdmin) {
+    if (isAdminLogin) {
       user = {
         id: `usr_admin_${Date.now()}`,
         name: (name && typeof name === 'string' && name.trim()) || 'Admin User',
@@ -163,7 +165,7 @@ router.post('/auth/google', (req, res) => {
       };
     } else {
       user = {
-        id: `usr_google_${Date.now()}`,
+        id: `usr_student_${Date.now()}`,
         name: (name && typeof name === 'string' && name.trim()) || cleanEmail.split('@')[0],
         email: cleanEmail,
         codeId: `STU-G-${randomSuffix}`,
@@ -181,12 +183,8 @@ router.post('/auth/google', (req, res) => {
 
     OrbitDB.createUser(user);
   } else {
-    // If existing user is signing in via Admin portal or is designated admin, ensure admin role
+    // Update avatar or authProvider if not previously set
     const updates: Partial<User> = {};
-    if (shouldBeAdmin && user.role !== 'admin') {
-      updates.role = 'admin';
-      updates.title = updates.title || 'Academic Coordinator';
-    }
     if (avatarUrl && !user.avatarUrl) {
       updates.avatarUrl = avatarUrl;
     }

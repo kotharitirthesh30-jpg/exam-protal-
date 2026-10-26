@@ -222,6 +222,7 @@ export const StudentLogin: React.FC = () => {
       <GoogleSignInModal
         isOpen={showGoogleModal}
         onClose={() => setShowGoogleModal(false)}
+        targetRole="student"
       />
     </div>
   );
