@@ -4,10 +4,11 @@ import { OrbitLogo } from '../components/OrbitLogo.tsx';
 import { useAuth } from '../context/AuthContext.tsx';
 import { Eye, EyeOff, Lock, User, AlertCircle, ArrowLeft, Sparkles, GraduationCap } from 'lucide-react';
 import { GoogleSignInButton } from '../components/GoogleSignInButton.tsx';
-import { GoogleSignInModal } from '../components/GoogleSignInModal.tsx';
+import { GoogleSignInModal, saveDeviceAccount } from '../components/GoogleSignInModal.tsx';
+import { signInWithFirebaseGooglePopup } from '../services/firebase.ts';
 
 export const StudentLogin: React.FC = () => {
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   const navigate = useNavigate();
 
   const [identifier, setIdentifier] = useState('');
@@ -16,7 +17,47 @@ export const StudentLogin: React.FC = () => {
   const [rememberMe, setRememberMe] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleModalError, setGoogleModalError] = useState<string | null>(null);
   const [showGoogleModal, setShowGoogleModal] = useState(false);
+
+  const handleGoogleSignInClick = async () => {
+    try {
+      setGoogleLoading(true);
+      setError(null);
+      setGoogleModalError(null);
+      const fbUser = await signInWithFirebaseGooglePopup();
+      if (fbUser && fbUser.email) {
+        await loginWithGoogle({
+          email: fbUser.email,
+          name: fbUser.displayName || fbUser.email.split('@')[0],
+          avatarUrl: fbUser.photoURL || undefined,
+          expectedRole: 'student',
+        });
+        saveDeviceAccount({
+          name: fbUser.displayName || fbUser.email.split('@')[0],
+          email: fbUser.email,
+          avatarUrl: fbUser.photoURL || undefined,
+          role: 'student',
+        });
+        navigate('/student/dashboard');
+        return;
+      }
+    } catch (popupErr: any) {
+      console.warn('Student Google direct sign-in fallback:', popupErr);
+      const code = popupErr?.code;
+      if (code === 'auth/popup-blocked') {
+        setGoogleModalError('Google popup was blocked. Please select or enter your account below.');
+      } else if (code === 'auth/popup-closed-by-user') {
+        setGoogleModalError('Google sign-in was closed before completing. Choose your account below to proceed.');
+      } else {
+        setGoogleModalError(popupErr.message || 'Unable to open Google popup.');
+      }
+      setShowGoogleModal(true);
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,7 +138,8 @@ export const StudentLogin: React.FC = () => {
           {/* Google Sign-In Button */}
           <div className="mb-6 space-y-4">
             <GoogleSignInButton
-              onClick={() => setShowGoogleModal(true)}
+              onClick={handleGoogleSignInClick}
+              loading={googleLoading}
               label="Sign in with Google"
             />
 
@@ -223,6 +265,7 @@ export const StudentLogin: React.FC = () => {
         isOpen={showGoogleModal}
         onClose={() => setShowGoogleModal(false)}
         targetRole="student"
+        initialError={googleModalError}
       />
     </div>
   );

@@ -19,10 +19,11 @@ import {
   Building
 } from 'lucide-react';
 import { GoogleSignInButton } from '../components/GoogleSignInButton.tsx';
-import { GoogleSignInModal } from '../components/GoogleSignInModal.tsx';
+import { GoogleSignInModal, saveDeviceAccount } from '../components/GoogleSignInModal.tsx';
+import { signInWithFirebaseGooglePopup } from '../services/firebase.ts';
 
 export const AdminLogin: React.FC = () => {
-  const { login, registerAdmin } = useAuth();
+  const { login, loginWithGoogle, registerAdmin } = useAuth();
   const navigate = useNavigate();
 
   // Login form state
@@ -32,9 +33,49 @@ export const AdminLogin: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleModalError, setGoogleModalError] = useState<string | null>(null);
 
   // Google Modal state
   const [showGoogleModal, setShowGoogleModal] = useState(false);
+
+  const handleGoogleSignInClick = async () => {
+    try {
+      setGoogleLoading(true);
+      setError(null);
+      setGoogleModalError(null);
+      const fbUser = await signInWithFirebaseGooglePopup();
+      if (fbUser && fbUser.email) {
+        await loginWithGoogle({
+          email: fbUser.email,
+          name: fbUser.displayName || fbUser.email.split('@')[0],
+          avatarUrl: fbUser.photoURL || undefined,
+          expectedRole: 'admin',
+        });
+        saveDeviceAccount({
+          name: fbUser.displayName || fbUser.email.split('@')[0],
+          email: fbUser.email,
+          avatarUrl: fbUser.photoURL || undefined,
+          role: 'admin',
+        });
+        navigate('/admin/dashboard');
+        return;
+      }
+    } catch (popupErr: any) {
+      console.warn('Admin Google direct sign-in fallback:', popupErr);
+      const code = popupErr?.code;
+      if (code === 'auth/popup-blocked') {
+        setGoogleModalError('Google popup was blocked. Please select or enter your account below.');
+      } else if (code === 'auth/popup-closed-by-user') {
+        setGoogleModalError('Google sign-in was closed before completing. Choose your account below to proceed.');
+      } else {
+        setGoogleModalError(popupErr.message || 'Unable to open Google popup.');
+      }
+      setShowGoogleModal(true);
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   // Add Any Admin Modal state
   const [showAddAdminModal, setShowAddAdminModal] = useState(false);
@@ -175,7 +216,8 @@ export const AdminLogin: React.FC = () => {
           {/* Google Sign-In for Admin */}
           <div className="mb-6 space-y-3">
             <GoogleSignInButton
-              onClick={() => setShowGoogleModal(true)}
+              onClick={handleGoogleSignInClick}
+              loading={googleLoading}
               label="Sign in with Google (Admin Portal)"
             />
 
@@ -300,6 +342,7 @@ export const AdminLogin: React.FC = () => {
         isOpen={showGoogleModal}
         onClose={() => setShowGoogleModal(false)}
         targetRole="admin"
+        initialError={googleModalError}
       />
 
       {/* Add Any New Admin Login Modal */}
