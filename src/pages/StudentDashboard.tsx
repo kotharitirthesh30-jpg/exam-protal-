@@ -95,51 +95,51 @@ export const StudentDashboard: React.FC = () => {
       {/* Top 3 Metric Cards matching mockup */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         {/* Metric 1 */}
-        <div className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800/90 relative overflow-hidden group hover:border-cyan-500/40 transition">
+        <div className="p-5 rounded-2xl bg-theme-surface border border-theme relative overflow-hidden group hover:border-indigo-500/40 transition shadow-lg">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-slate-400">Upcoming Exams</span>
-            <div className="w-9 h-9 rounded-xl bg-cyan-950/80 border border-cyan-800/60 flex items-center justify-center text-cyan-400">
+            <span className="text-xs font-semibold text-theme-secondary">Upcoming Exams</span>
+            <div className="w-10 h-10 rounded-xl bg-indigo-950/70 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shadow-sm">
               <BookOpen className="w-5 h-5" />
             </div>
           </div>
           <div className="text-3xl font-extrabold text-white">{upcomingExams.length}</div>
-          <p className="text-xs text-slate-500 mt-1">Pending student action</p>
-          <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-cyan-500/5 rounded-full blur-xl" />
+          <p className="text-xs text-theme-muted mt-1">Pending student action</p>
+          <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-indigo-500/5 rounded-full blur-xl" />
         </div>
 
         {/* Metric 2 */}
-        <div className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800/90 relative overflow-hidden group hover:border-indigo-500/40 transition">
+        <div className="p-5 rounded-2xl bg-theme-surface border border-theme relative overflow-hidden group hover:border-purple-500/40 transition shadow-lg">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-slate-400">Completed Exams</span>
-            <div className="w-9 h-9 rounded-xl bg-indigo-950/80 border border-indigo-800/60 flex items-center justify-center text-indigo-400">
+            <span className="text-xs font-semibold text-theme-secondary">Completed Exams</span>
+            <div className="w-10 h-10 rounded-xl bg-purple-950/70 border border-purple-500/30 flex items-center justify-center text-purple-400 shadow-sm">
               <CheckCircle className="w-5 h-5" />
             </div>
           </div>
           <div className="text-3xl font-extrabold text-white">{completedExams.length}</div>
-          <p className="text-xs text-slate-500 mt-1">Evaluated submissions</p>
-          <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-indigo-500/5 rounded-full blur-xl" />
+          <p className="text-xs text-theme-muted mt-1">Evaluated submissions</p>
+          <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-purple-500/5 rounded-full blur-xl" />
         </div>
 
         {/* Metric 3 */}
-        <div className="p-5 rounded-2xl bg-slate-900/70 border border-slate-800/90 relative overflow-hidden group hover:border-amber-500/40 transition">
+        <div className="p-5 rounded-2xl bg-theme-surface border border-theme relative overflow-hidden group hover:border-emerald-500/40 transition shadow-lg">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-slate-400">Average Score</span>
-            <div className="w-9 h-9 rounded-xl bg-amber-950/80 border border-amber-800/60 flex items-center justify-center text-amber-400">
+            <span className="text-xs font-semibold text-theme-secondary">Average Score</span>
+            <div className="w-10 h-10 rounded-xl bg-emerald-950/70 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-sm">
               <TrendingUp className="w-5 h-5" />
             </div>
           </div>
           <div className="text-3xl font-extrabold text-white">
             {completedExams.length > 0 ? `${avgScore}%` : '0%'}
           </div>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-theme-muted mt-1">
             {completedExams.length > 0 ? 'Across completed exams' : '0 exams completed (0% score)'}
           </p>
-          <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-amber-500/5 rounded-full blur-xl" />
+          <div className="absolute -right-4 -bottom-4 w-20 h-20 bg-emerald-500/5 rounded-full blur-xl" />
         </div>
       </div>
 
       {/* Upcoming Examinations Section */}
-      <div className="rounded-3xl bg-slate-900/70 border border-slate-800/90 p-6 space-y-5">
+      <div className="rounded-3xl bg-theme-surface border border-theme p-6 space-y-5 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-bold text-white tracking-tight">Upcoming Examinations</h2>

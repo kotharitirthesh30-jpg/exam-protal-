@@ -6,6 +6,7 @@ import { Eye, EyeOff, Lock, User, AlertCircle, ArrowLeft, Sparkles, GraduationCa
 import { GoogleSignInButton } from '../components/GoogleSignInButton.tsx';
 import { GoogleSignInModal, saveDeviceAccount } from '../components/GoogleSignInModal.tsx';
 import { signInWithFirebaseGooglePopup } from '../services/firebase.ts';
+import { ThemeSelector } from '../components/ThemeSelector.tsx';
 
 export const StudentLogin: React.FC = () => {
   const { login, loginWithGoogle } = useAuth();
@@ -50,6 +51,8 @@ export const StudentLogin: React.FC = () => {
         setGoogleModalError('Google popup was blocked. Please select or enter your account below.');
       } else if (code === 'auth/popup-closed-by-user') {
         setGoogleModalError('Google sign-in was closed before completing. Choose your account below to proceed.');
+      } else if (code === 'auth/unauthorized-domain') {
+        setGoogleModalError('This preview domain is not yet in Firebase OAuth authorized list. Enter your Google Account below to continue.');
       } else {
         setGoogleModalError(popupErr.message || 'Unable to open Google popup.');
       }
@@ -90,39 +93,48 @@ export const StudentLogin: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#070b14] flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)] flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden transition-colors">
+      <div className="technical-grid" />
       {/* Background radial glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-gradient-to-tr from-cyan-600/10 via-indigo-600/15 to-purple-600/10 rounded-full blur-[100px] pointer-events-none" />
+      <div
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] rounded-full blur-[140px] pointer-events-none opacity-45"
+        style={{
+          background: 'radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, rgba(139, 92, 246, 0.18) 40%, transparent 70%)',
+        }}
+      />
 
-      {/* Back to Home Link */}
+      {/* Back to Home Link & Theme Switcher */}
       <div className="mb-6 z-10 w-full max-w-md flex items-center justify-between">
         <Link
           to="/"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white transition"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-theme-secondary hover:text-theme-primary transition"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Home</span>
         </Link>
-        <Link
-          to="/admin/login"
-          className="text-xs font-medium text-purple-400 hover:text-purple-300 transition"
-        >
-          Admin Portal →
-        </Link>
+        <div className="flex items-center gap-3">
+          <ThemeSelector compact />
+          <Link
+            to="/admin/login"
+            className="text-xs font-medium text-theme-accent hover:underline transition"
+          >
+            Admin Portal →
+          </Link>
+        </div>
       </div>
 
       {/* Login Card */}
       <div className="relative w-full max-w-md z-10">
-        <div className="rounded-3xl bg-slate-900/80 border border-slate-800/90 p-8 shadow-2xl backdrop-blur-xl">
+        <div className="rounded-3xl bg-theme-surface border border-theme p-8 shadow-2xl backdrop-blur-xl transition-colors">
           {/* Header */}
           <div className="flex flex-col items-center text-center mb-8">
             <OrbitLogo size="lg" className="mb-3" />
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-950/70 border border-cyan-800/40 text-cyan-300 text-xs font-semibold mb-2">
-              <GraduationCap className="w-3.5 h-3.5" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full badge-theme text-xs font-semibold mb-2">
+              <GraduationCap className="w-3.5 h-3.5 text-theme-accent" />
               <span>Student Portal</span>
             </div>
-            <h2 className="text-2xl font-bold text-white tracking-tight">Student Login</h2>
-            <p className="text-xs text-slate-400 mt-1">
+            <h2 className="text-2xl font-bold text-theme-primary tracking-tight">Student Login</h2>
+            <p className="text-xs text-theme-secondary mt-1">
               Sign in with your Student ID or institutional email to access your examinations.
             </p>
           </div>
@@ -162,7 +174,7 @@ export const StudentLogin: React.FC = () => {
                 Student ID or Email
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-theme-muted">
                   <User className="w-4 h-4" />
                 </div>
                 <input
@@ -171,7 +183,7 @@ export const StudentLogin: React.FC = () => {
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   placeholder="e.g. STU-2024-001 or student@orbit.edu"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950/70 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-theme-elevated border border-theme text-theme-primary placeholder-theme-muted text-sm focus:outline-none focus:ring-2 focus:ring-theme-accent transition"
                   required
                 />
               </div>
@@ -179,19 +191,19 @@ export const StudentLogin: React.FC = () => {
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label htmlFor="student-password" className="block text-xs font-semibold text-slate-300">
+                <label htmlFor="student-password" className="block text-xs font-semibold text-theme-secondary">
                   Password
                 </label>
                 <button
                   type="button"
                   onClick={() => alert('For password reset, please contact your university department exam coordinator: exam-desk@orbit.edu')}
-                  className="text-[11px] text-cyan-400 hover:text-cyan-300 transition"
+                  className="text-[11px] text-theme-accent hover:underline transition"
                 >
                   Forgot password?
                 </button>
               </div>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-theme-muted">
                   <Lock className="w-4 h-4" />
                 </div>
                 <input
@@ -200,13 +212,13 @@ export const StudentLogin: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your password"
-                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-950/70 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition"
+                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-theme-elevated border border-theme text-theme-primary placeholder-theme-muted text-sm focus:outline-none focus:ring-2 focus:ring-theme-accent transition"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-300"
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-theme-muted hover:text-theme-primary"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -214,13 +226,13 @@ export const StudentLogin: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-between text-xs text-slate-400 pt-1">
+            <div className="flex items-center justify-between text-xs text-theme-secondary pt-1">
               <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={rememberMe}
                   onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-cyan-500 focus:ring-cyan-500 focus:ring-offset-0"
+                  className="w-4 h-4 rounded bg-theme-elevated border-theme text-theme-accent focus:ring-theme-accent focus:ring-offset-0"
                 />
                 <span>Remember my session</span>
               </label>
@@ -229,7 +241,7 @@ export const StudentLogin: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 shadow-lg shadow-indigo-600/30 transition disabled:opacity-60 flex items-center justify-center gap-2 mt-2"
+              className="btn-theme-primary w-full py-3 rounded-xl font-semibold shadow-lg transition disabled:opacity-60 flex items-center justify-center gap-2 mt-2"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -240,21 +252,21 @@ export const StudentLogin: React.FC = () => {
           </form>
 
           {/* Quick Demo Credentials Autofill */}
-          <div className="mt-6 pt-5 border-t border-slate-800 text-center">
+          <div className="mt-6 pt-5 border-t border-theme text-center">
             <button
               type="button"
               onClick={handleFillDemo}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-950/60 border border-indigo-800/40 text-xs font-semibold text-cyan-300 hover:bg-indigo-900/60 transition"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-theme-elevated border border-theme text-xs font-semibold text-theme-accent hover:border-theme-strong transition"
             >
-              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+              <Sparkles className="w-3.5 h-3.5 text-theme-accent" />
               <span>Autofill Demo Student (Aarav Mehta)</span>
             </button>
           </div>
 
           {/* Registration link */}
-          <div className="mt-5 text-center text-xs text-slate-400">
+          <div className="mt-5 text-center text-xs text-theme-secondary">
             <span>Don't have an account? </span>
-            <Link to="/register" className="text-cyan-400 hover:text-cyan-300 font-semibold underline underline-offset-2">
+            <Link to="/register" className="text-theme-accent font-semibold underline underline-offset-2">
               Register here
             </Link>
           </div>

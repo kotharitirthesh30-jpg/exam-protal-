@@ -68,7 +68,112 @@
       "createdAt": "2026-10-26T12:19:51.265Z"
     }
   ],
-  "exams": [],
+  "exams": [
+    {
+      "id": "exam_1793546985506",
+      "title": "Computer Networks & Systems Assessment",
+      "subject": "Computer Science",
+      "description": "Institutional examination covering network topology, transport protocols, and data structures.",
+      "instructions": [
+        "Total duration is 30 minutes.",
+        "Objective multi-choice format.",
+        "Each question carries 2 marks.",
+        "Passing marks required: 5 out of 10 marks.",
+        "Full-screen monitoring and proctoring enabled."
+      ],
+      "durationMinutes": 30,
+      "totalMarks": 10,
+      "passingMarks": 5,
+      "startDate": "2026-11-01T14:29:45.506Z",
+      "endDate": "2026-11-15T15:29:45.506Z",
+      "isPublished": true,
+      "negativeMarking": true,
+      "questions": [
+        {
+          "id": "q_cn_1",
+          "subject": "Computer Networks",
+          "topic": "Physical Layer",
+          "text": "Which topology requires a multipoint connection where all nodes share a single communication line?",
+          "options": [
+            "Star Topology",
+            "Mesh Topology",
+            "Bus Topology",
+            "Ring Topology"
+          ],
+          "correctAnswerIndex": 2,
+          "marks": 2,
+          "negativeMarks": 0.5,
+          "explanation": "In Bus Topology, all devices are connected along a single backbone cable acting as a multipoint connection."
+        },
+        {
+          "id": "q_cn_2",
+          "subject": "Computer Networks",
+          "topic": "Data Link Layer",
+          "text": "What is the primary role of the Address Resolution Protocol (ARP)?",
+          "options": [
+            "Map 32-bit IPv4 address to 48-bit MAC address",
+            "Map domain names to IP addresses",
+            "Provide secure encryption across networks",
+            "Route packets between different subnets"
+          ],
+          "correctAnswerIndex": 0,
+          "marks": 2,
+          "negativeMarks": 0.5,
+          "explanation": "ARP resolves logical network layer IP addresses to physical data link layer MAC addresses."
+        },
+        {
+          "id": "q_cn_3",
+          "subject": "Computer Networks",
+          "topic": "Network Layer",
+          "text": "Which class of IPv4 address provides a default subnet mask of 255.255.0.0?",
+          "options": [
+            "Class A",
+            "Class B",
+            "Class C",
+            "Class D"
+          ],
+          "correctAnswerIndex": 1,
+          "marks": 2,
+          "negativeMarks": 0.5,
+          "explanation": "Class B addresses have a 16-bit network prefix (/16), yielding a default subnet mask of 255.255.0.0."
+        },
+        {
+          "id": "q_cn_4",
+          "subject": "Computer Networks",
+          "topic": "Transport Layer",
+          "text": "What mechanism does TCP utilize to establish a reliable end-to-end full duplex connection?",
+          "options": [
+            "Four-way Handshake",
+            "Three-way Handshake (SYN, SYN-ACK, ACK)",
+            "Carrier Sense Multiple Access (CSMA/CD)",
+            "Sliding Window Piggybacking"
+          ],
+          "correctAnswerIndex": 1,
+          "marks": 2,
+          "negativeMarks": 0.5,
+          "explanation": "TCP sets up connection state via a three-way handshake: SYN from client, SYN-ACK from server, ACK from client."
+        },
+        {
+          "id": "q_cn_5",
+          "subject": "Computer Networks",
+          "topic": "OSI Reference Model",
+          "text": "Which layer of the OSI model handles logical addressing and routing?",
+          "options": [
+            "Data Link",
+            "Network",
+            "Transport",
+            "Session"
+          ],
+          "correctAnswerIndex": 1,
+          "marks": 2,
+          "negativeMarks": 0.5,
+          "explanation": "The Network Layer (Layer 3) is responsible for packet forwarding, routing, and IP addressing."
+        }
+      ],
+      "createdBy": "Dr. Priya Nair",
+      "createdAt": "2026-11-01T15:29:45.506Z"
+    }
+  ],
   "questionBank": [
     {
       "id": "q_cn_1",

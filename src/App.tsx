@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext.tsx';
+import { ThemeProvider } from './context/ThemeContext.tsx';
 
 // Pages
 import { Home } from './pages/Home.tsx';
@@ -70,65 +71,67 @@ const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Public Landing & Authentication */}
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<StudentLogin />} />
-          <Route path="/student/login" element={<StudentLogin />} />
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/register" element={<Register />} />
+    <ThemeProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public Landing & Authentication */}
+            <Route path="/" element={<Home />} />
+            <Route path="/login" element={<StudentLogin />} />
+            <Route path="/student/login" element={<StudentLogin />} />
+            <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/register" element={<Register />} />
 
-          {/* Student Portal Protected Routes */}
-          <Route
-            path="/student"
-            element={
-              <StudentRoute>
-                <StudentLayout />
-              </StudentRoute>
-            }
-          >
-            <Route index element={<Navigate to="/student/dashboard" replace />} />
-            <Route path="dashboard" element={<StudentDashboard />} />
-            <Route path="exams" element={<Exams />} />
-            <Route path="results" element={<StudentResults />} />
-            <Route path="results/:id" element={<ResultDetailPage />} />
-            <Route path="profile" element={<Profile />} />
-          </Route>
+            {/* Student Portal Protected Routes */}
+            <Route
+              path="/student"
+              element={
+                <StudentRoute>
+                  <StudentLayout />
+                </StudentRoute>
+              }
+            >
+              <Route index element={<Navigate to="/student/dashboard" replace />} />
+              <Route path="dashboard" element={<StudentDashboard />} />
+              <Route path="exams" element={<Exams />} />
+              <Route path="results" element={<StudentResults />} />
+              <Route path="results/:id" element={<ResultDetailPage />} />
+              <Route path="profile" element={<Profile />} />
+            </Route>
 
-          {/* Standalone Distraction-Free Examination Interface */}
-          <Route
-            path="/exam/:id"
-            element={
-              <StudentRoute>
-                <ExaminationPage />
-              </StudentRoute>
-            }
-          />
+            {/* Standalone Distraction-Free Examination Interface */}
+            <Route
+              path="/exam/:id"
+              element={
+                <StudentRoute>
+                  <ExaminationPage />
+                </StudentRoute>
+              }
+            />
 
-          {/* Administrator Portal Protected Routes */}
-          <Route
-            path="/admin"
-            element={
-              <AdminRoute>
-                <AdminLayout />
-              </AdminRoute>
-            }
-          >
-            <Route index element={<Navigate to="/admin/dashboard" replace />} />
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="exams" element={<AdminManageExams />} />
-            <Route path="questions" element={<AdminQuestionBank />} />
-            <Route path="students" element={<AdminStudents />} />
-            <Route path="reports" element={<AdminReports />} />
-            <Route path="profile" element={<Profile />} />
-          </Route>
+            {/* Administrator Portal Protected Routes */}
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <AdminLayout />
+                </AdminRoute>
+              }
+            >
+              <Route index element={<Navigate to="/admin/dashboard" replace />} />
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="exams" element={<AdminManageExams />} />
+              <Route path="questions" element={<AdminQuestionBank />} />
+              <Route path="students" element={<AdminStudents />} />
+              <Route path="reports" element={<AdminReports />} />
+              <Route path="profile" element={<Profile />} />
+            </Route>
 
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

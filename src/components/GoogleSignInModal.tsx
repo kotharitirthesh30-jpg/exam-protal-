@@ -148,6 +148,8 @@ export const GoogleSignInModal: React.FC<GoogleSignInModalProps> = ({
         );
       } else if (code === 'auth/popup-closed-by-user') {
         setError('Sign-in cancelled. Please click the button below to try again.');
+      } else if (code === 'auth/unauthorized-domain') {
+        setError('This preview domain is not yet in Firebase OAuth authorized list. Enter your Google Account below to continue.');
       } else {
         setError(popupErr.message || 'Unable to open Google Sign-In. You can enter your email directly below.');
       }

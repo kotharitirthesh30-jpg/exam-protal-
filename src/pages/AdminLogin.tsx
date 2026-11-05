@@ -21,6 +21,7 @@ import {
 import { GoogleSignInButton } from '../components/GoogleSignInButton.tsx';
 import { GoogleSignInModal, saveDeviceAccount } from '../components/GoogleSignInModal.tsx';
 import { signInWithFirebaseGooglePopup } from '../services/firebase.ts';
+import { ThemeSelector } from '../components/ThemeSelector.tsx';
 
 export const AdminLogin: React.FC = () => {
   const { login, loginWithGoogle, registerAdmin } = useAuth();
@@ -68,6 +69,8 @@ export const AdminLogin: React.FC = () => {
         setGoogleModalError('Google popup was blocked. Please select or enter your account below.');
       } else if (code === 'auth/popup-closed-by-user') {
         setGoogleModalError('Google sign-in was closed before completing. Choose your account below to proceed.');
+      } else if (code === 'auth/unauthorized-domain') {
+        setGoogleModalError('This preview domain is not yet in Firebase OAuth authorized list. Enter your Google Account below to continue.');
       } else {
         setGoogleModalError(popupErr.message || 'Unable to open Google popup.');
       }
@@ -160,39 +163,48 @@ export const AdminLogin: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#070b14] flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--ink)] flex flex-col justify-center items-center px-4 py-12 relative overflow-hidden transition-colors">
+      <div className="technical-grid" />
       {/* Background radial glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-gradient-to-tr from-purple-600/15 via-indigo-600/15 to-blue-600/15 rounded-full blur-[110px] pointer-events-none" />
+      <div
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[650px] rounded-full blur-[140px] pointer-events-none opacity-45"
+        style={{
+          background: 'radial-gradient(circle, rgba(99, 102, 241, 0.3) 0%, rgba(139, 92, 246, 0.18) 40%, transparent 70%)',
+        }}
+      />
 
-      {/* Back Links */}
+      {/* Back Links & Theme Switcher */}
       <div className="mb-6 z-10 w-full max-w-md flex items-center justify-between">
         <Link
           to="/"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400 hover:text-white transition"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-theme-secondary hover:text-theme-primary transition"
         >
           <ArrowLeft className="w-4 h-4" />
           <span>Back to Home</span>
         </Link>
-        <Link
-          to="/student/login"
-          className="text-xs font-medium text-cyan-400 hover:text-cyan-300 transition"
-        >
-          ← Student Portal
-        </Link>
+        <div className="flex items-center gap-3">
+          <ThemeSelector compact />
+          <Link
+            to="/student/login"
+            className="text-xs font-medium text-theme-accent hover:underline transition"
+          >
+            ← Student Portal
+          </Link>
+        </div>
       </div>
 
       {/* Login Card */}
       <div className="relative w-full max-w-md z-10">
-        <div className="rounded-3xl bg-slate-900/85 border border-slate-800/90 p-8 shadow-2xl backdrop-blur-xl">
+        <div className="rounded-3xl bg-theme-surface border border-theme p-8 shadow-2xl backdrop-blur-xl transition-colors">
           {/* Header */}
           <div className="flex flex-col items-center text-center mb-6">
             <OrbitLogo size="lg" className="mb-3" />
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-950/70 border border-purple-800/40 text-purple-300 text-xs font-semibold mb-2">
-              <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full badge-theme text-xs font-semibold mb-2">
+              <ShieldCheck className="w-3.5 h-3.5 text-theme-accent" />
               <span>Restricted Administration</span>
             </div>
-            <h2 className="text-2xl font-bold text-white tracking-tight">Admin Login</h2>
-            <p className="text-xs text-slate-400 mt-1">
+            <h2 className="text-2xl font-bold text-theme-primary tracking-tight">Admin Login</h2>
+            <p className="text-xs text-theme-secondary mt-1">
               Sign in via Google or credentials to manage examination integrity, questions, and evaluations.
             </p>
           </div>
@@ -240,7 +252,7 @@ export const AdminLogin: React.FC = () => {
                 Admin ID or Email
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-theme-muted">
                   <Key className="w-4 h-4" />
                 </div>
                 <input
@@ -249,7 +261,7 @@ export const AdminLogin: React.FC = () => {
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   placeholder="e.g. ADM-1001, admin@orbit.edu, or your email"
-                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950/70 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-theme-elevated border border-theme text-theme-primary placeholder-theme-muted text-sm focus:outline-none focus:ring-2 focus:ring-theme-accent transition"
                   required
                 />
               </div>
@@ -257,19 +269,19 @@ export const AdminLogin: React.FC = () => {
 
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label htmlFor="admin-password" className="block text-xs font-semibold text-slate-300">
+                <label htmlFor="admin-password" className="block text-xs font-semibold text-theme-secondary">
                   Administrator Password
                 </label>
                 <button
                   type="button"
                   onClick={() => alert('For security purposes, admin password resets must be authorized by the Institutional Examination Board.')}
-                  className="text-[11px] text-purple-400 hover:text-purple-300 transition"
+                  className="text-[11px] text-theme-accent hover:underline transition"
                 >
                   Forgot password?
                 </button>
               </div>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-theme-muted">
                   <Lock className="w-4 h-4" />
                 </div>
                 <input
@@ -278,13 +290,13 @@ export const AdminLogin: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter administrator password"
-                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-slate-950/70 border border-slate-700/80 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+                  className="w-full pl-10 pr-10 py-2.5 rounded-xl bg-theme-elevated border border-theme text-theme-primary placeholder-theme-muted text-sm focus:outline-none focus:ring-2 focus:ring-theme-accent transition"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-slate-300"
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-theme-muted hover:text-theme-primary"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -295,7 +307,7 @@ export const AdminLogin: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 shadow-lg shadow-purple-600/30 transition disabled:opacity-60 flex items-center justify-center gap-2 mt-4"
+              className="btn-theme-primary w-full py-3 rounded-xl font-semibold shadow-lg transition disabled:opacity-60 flex items-center justify-center gap-2 mt-4"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -306,7 +318,7 @@ export const AdminLogin: React.FC = () => {
           </form>
 
           {/* Quick Actions: Add Any Admin Login & Demo Account */}
-          <div className="mt-6 pt-5 border-t border-slate-800 space-y-2.5 text-center">
+          <div className="mt-6 pt-5 border-t border-theme space-y-2.5 text-center">
             {/* Add Any Login in Admin button */}
             <button
               type="button"
@@ -314,9 +326,9 @@ export const AdminLogin: React.FC = () => {
                 setAddAdminError(null);
                 setShowAddAdminModal(true);
               }}
-              className="w-full py-2.5 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-750 border border-purple-500/30 hover:border-purple-500/60 text-xs font-semibold text-purple-200 transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+              className="w-full py-2.5 px-3 rounded-xl bg-theme-elevated hover:bg-theme-elevated/80 border border-theme text-xs font-semibold text-theme-primary transition flex items-center justify-center gap-2 cursor-pointer shadow-sm"
             >
-              <UserPlus className="w-4 h-4 text-purple-400" />
+              <UserPlus className="w-4 h-4 text-theme-accent" />
               <span>+ Add / Register Any New Admin Login</span>
             </button>
 
@@ -324,9 +336,9 @@ export const AdminLogin: React.FC = () => {
             <button
               type="button"
               onClick={handleFillDemo}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-purple-950/60 border border-purple-800/40 text-xs font-medium text-purple-300 hover:bg-purple-900/60 transition"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-theme-elevated border border-theme text-xs font-medium text-theme-accent hover:border-theme-strong transition"
             >
-              <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+              <Sparkles className="w-3.5 h-3.5 text-theme-accent" />
               <span>Autofill Demo Admin (Dr. Priya Nair)</span>
             </button>
           </div>
