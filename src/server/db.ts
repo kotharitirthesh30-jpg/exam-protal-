@@ -93,12 +93,30 @@ export interface ExamResult {
   }[];
 }
 
+export interface ProctorLog {
+  id: string;
+  attemptId: string;
+  examId: string;
+  examTitle: string;
+  studentId: string;
+  studentName: string;
+  studentCodeId: string;
+  studentEmail?: string;
+  type: 'tab_switch' | 'window_blur' | 'fullscreen_exit';
+  message: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  violationCount: number;
+  isRead: boolean;
+  timestamp: string;
+}
+
 interface DatabaseSchema {
   users: User[];
   exams: Exam[];
   questionBank: Question[];
   attempts: ExamAttempt[];
   results: ExamResult[];
+  proctorLogs: ProctorLog[];
 }
 
 const DATA_DIR = path.resolve(process.cwd(), '.data');
@@ -115,6 +133,7 @@ let db: DatabaseSchema = {
   questionBank: [],
   attempts: [],
   results: [],
+  proctorLogs: [],
 };
 
 // Seed initial data
@@ -143,6 +162,9 @@ export function initializeDatabase() {
       }
       if (db.users) {
         db.users = db.users.filter((u) => !FAKE_STUDENT_IDS.includes(u.id));
+      }
+      if (!db.proctorLogs) {
+        db.proctorLogs = [];
       }
 
       // Verify we have seed users
@@ -605,6 +627,7 @@ export function initializeDatabase() {
     questionBank: [...cnQuestions, ...dsQuestions, ...osQuestions, ...dbmsQuestions],
     attempts: [],
     results: [],
+    proctorLogs: [],
   };
 
   saveDatabase();
@@ -738,5 +761,30 @@ export const OrbitDB = {
     db.exams.push(sampleExam);
     saveDatabase();
     return sampleExam;
+  },
+
+  getProctorLogs: () => db.proctorLogs || [],
+  getProctorLogsByAttempt: (attemptId: string) =>
+    (db.proctorLogs || []).filter((log) => log.attemptId === attemptId),
+  addProctorLog: (log: ProctorLog) => {
+    if (!db.proctorLogs) db.proctorLogs = [];
+    db.proctorLogs.push(log);
+    saveDatabase();
+    return log;
+  },
+  markProctorLogRead: (id: string) => {
+    if (!db.proctorLogs) return null;
+    const log = db.proctorLogs.find((l) => l.id === id);
+    if (!log) return null;
+    log.isRead = true;
+    saveDatabase();
+    return log;
+  },
+  markAllProctorLogsRead: () => {
+    if (!db.proctorLogs) return;
+    db.proctorLogs.forEach((l) => {
+      l.isRead = true;
+    });
+    saveDatabase();
   },
 };

@@ -12,8 +12,14 @@ async function startServer() {
   initializeDatabase();
 
   const app = express();
-  const PORT = Number(process.env.PORT) || 3000;
   const isProduction = process.env.NODE_ENV === 'production';
+  const envPort = Number(process.env.PORT);
+  const nginxPort = Number(process.env.NGINX_PORT);
+  const PORT = !isProduction
+    ? Number(process.env.DEFAULT_APP_PORT) || 3000
+    : envPort && envPort !== nginxPort
+      ? envPort
+      : 3000;
 
   // Request parsers
   app.use(express.json());

@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext.tsx';
 import { ThemeProvider } from './context/ThemeContext.tsx';
+import { getAuthToken } from './services/api.ts';
 
 // Pages
 import { Home } from './pages/Home.tsx';
@@ -29,7 +30,7 @@ import { AdminLayout } from './layouts/AdminLayout.tsx';
 // Protected Route Guard for Students
 const StudentRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
-  const hasToken = Boolean(localStorage.getItem('orbit_token'));
+  const hasToken = Boolean(getAuthToken());
 
   if (loading || (hasToken && !user)) {
     return (
@@ -50,7 +51,7 @@ const StudentRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 // Protected Route Guard for Administrators
 const AdminRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
-  const hasToken = Boolean(localStorage.getItem('orbit_token'));
+  const hasToken = Boolean(getAuthToken());
 
   if (loading || (hasToken && !user)) {
     return (

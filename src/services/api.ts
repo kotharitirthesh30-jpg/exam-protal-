@@ -90,23 +90,63 @@ export interface AdminStats {
   avgScore: number;
 }
 
-function getAuthToken(): string | null {
+export interface ProctorAlert {
+  id: string;
+  attemptId: string;
+  examId: string;
+  examTitle: string;
+  studentId: string;
+  studentName: string;
+  studentCodeId: string;
+  studentEmail?: string;
+  type: 'tab_switch' | 'window_blur' | 'fullscreen_exit';
+  message: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  violationCount: number;
+  isRead: boolean;
+  timestamp: string;
+}
+
+export function getAuthToken(): string | null {
+  const tabToken = sessionStorage.getItem('orbit_token');
+  if (tabToken) return tabToken;
+
+  const path = typeof window !== 'undefined' ? window.location.pathname : '';
+  if (path.startsWith('/admin')) {
+    return localStorage.getItem('orbit_token_admin') || localStorage.getItem('orbit_token');
+  }
+  if (path.startsWith('/student') || path.startsWith('/exam')) {
+    return localStorage.getItem('orbit_token_student') || localStorage.getItem('orbit_token');
+  }
   return localStorage.getItem('orbit_token');
 }
 
-export function setAuthToken(token: string | null) {
+export function setAuthToken(token: string | null, role?: 'student' | 'admin') {
   if (token) {
+    sessionStorage.setItem('orbit_token', token);
+    if (role) {
+      localStorage.setItem(`orbit_token_${role}`, token);
+    }
     localStorage.setItem('orbit_token', token);
   } else {
-    localStorage.removeItem('orbit_token');
+    const tabToken = sessionStorage.getItem('orbit_token');
+    sessionStorage.removeItem('orbit_token');
+    if (role) {
+      localStorage.removeItem(`orbit_token_${role}`);
+    }
+    if (!role || localStorage.getItem('orbit_token') === tabToken) {
+      localStorage.removeItem('orbit_token');
+    }
   }
 }
 
 async function fetchWithAuth(url: string, options: RequestInit = {}) {
   const token = getAuthToken();
   const headers = new Headers(options.headers || {});
-  headers.set('Content-Type', 'application/json');
-  if (token) {
+  if (!headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+  if (token && !headers.has('Authorization')) {
     headers.set('Authorization', `Bearer ${token}`);
   }
 
@@ -238,5 +278,31 @@ export const api = {
   deleteQuestionFromBank: (id: string) =>
     fetchWithAuth(`/admin/question-bank/${id}`, {
       method: 'DELETE',
+    }),
+
+  // Proctoring / Anti-Cheat Alerts
+  reportProctorViolation: (payload: {
+    attemptId?: string;
+    examId: string;
+    type: 'tab_switch' | 'window_blur' | 'fullscreen_exit';
+    message?: string;
+  }) =>
+    fetchWithAuth('/proctor/violation', {
+      method: 'POST',
+      keepalive: true,
+      body: JSON.stringify(payload),
+    }),
+  getAdminProctorAlerts: () =>
+    fetchWithAuth('/admin/proctor-alerts') as Promise<{
+      alerts: ProctorAlert[];
+      unreadCount: number;
+    }>,
+  markProctorAlertRead: (id: string) =>
+    fetchWithAuth(`/admin/proctor-alerts/${id}/read`, {
+      method: 'PUT',
+    }),
+  markAllProctorAlertsRead: () =>
+    fetchWithAuth('/admin/proctor-alerts/read-all', {
+      method: 'PUT',
     }),
 };

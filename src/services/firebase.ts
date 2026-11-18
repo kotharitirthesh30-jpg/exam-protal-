@@ -1,18 +1,25 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { 
-  getFirestore, 
-  doc, 
-  getDocFromServer, 
-  setDoc, 
-  getDoc, 
-  collection, 
-  getDocs, 
-  serverTimestamp 
+import {
+  getFirestore,
+  doc,
+  getDocFromServer,
+  setDoc,
+  getDoc,
+  updateDoc,
+  collection,
+  getDocs,
+  query,
+  orderBy,
+  limit,
+  onSnapshot,
+  writeBatch,
+  serverTimestamp,
 } from 'firebase/firestore';
-import { 
-  getAuth, 
-  GoogleAuthProvider, 
-  signInWithPopup 
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  onAuthStateChanged,
 } from 'firebase/auth';
 import firebaseConfig from '../../firebase-applet-config.json';
 
@@ -139,6 +146,135 @@ export async function persistExamResultToFirestore(resultData: any) {
     }, { merge: true });
   } catch (error) {
     console.warn('Firestore result persistence sync note:', error);
+  }
+}
+
+export async function persistProctorLogToFirestore(logData: {
+  id: string;
+  attemptId: string;
+  examId: string;
+  examTitle: string;
+  studentId: string;
+  studentName: string;
+  studentCodeId: string;
+  type: 'tab_switch' | 'window_blur' | 'fullscreen_exit';
+  message: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  violationCount: number;
+  isRead: boolean;
+  timestamp: string;
+}) {
+  if (!logData?.id || !auth.currentUser) return;
+  const path = `proctor_logs/${logData.id}`;
+  try {
+    const logRef = doc(db, 'proctor_logs', logData.id);
+    const payload = {
+      id: String(logData.id).slice(0, 128),
+      attemptId: String(logData.attemptId || '').slice(0, 128),
+      examId: String(logData.examId || '').slice(0, 128),
+      examTitle: String(logData.examTitle || '').slice(0, 200),
+      studentId: String(logData.studentId || '').slice(0, 128),
+      studentName: String(logData.studentName || '').slice(0, 120),
+      studentCodeId: String(logData.studentCodeId || '').slice(0, 64),
+      authUid: auth.currentUser.uid,
+      type: logData.type,
+      message: String(logData.message || '').slice(0, 500),
+      severity: logData.severity,
+      violationCount: Math.max(1, Math.min(1000, Number(logData.violationCount || 1))),
+      isRead: Boolean(logData.isRead),
+      timestamp: String(logData.timestamp || new Date().toISOString()).slice(0, 64),
+      createdAt: serverTimestamp(),
+    };
+    await setDoc(logRef, payload);
+  } catch (error) {
+    console.warn(`Firestore proctor log sync note (${path}):`, error);
+  }
+}
+
+export function subscribeToFirestoreProctorLogs(
+  onAlerts: (alerts: any[]) => void
+): () => void {
+  let unsubscribeSnapshot: (() => void) | null = null;
+  let cancelled = false;
+
+  const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+    if (unsubscribeSnapshot) {
+      unsubscribeSnapshot();
+      unsubscribeSnapshot = null;
+    }
+    if (!firebaseUser || cancelled) return;
+
+    try {
+      const isBootstrapAdmin =
+        firebaseUser.emailVerified &&
+        firebaseUser.email?.toLowerCase() === 'kotharitirthesh30@gmail.com';
+      let isFirestoreAdmin = isBootstrapAdmin;
+
+      if (!isFirestoreAdmin) {
+        const adminSnap = await getDoc(doc(db, 'admins', firebaseUser.uid));
+        isFirestoreAdmin = adminSnap.exists();
+      }
+
+      if (!isFirestoreAdmin || cancelled) return;
+
+      const pathForOnSnapshot = 'proctor_logs';
+      const q = query(
+        collection(db, pathForOnSnapshot),
+        orderBy('timestamp', 'desc'),
+        limit(50)
+      );
+
+      unsubscribeSnapshot = onSnapshot(
+        q,
+        (snapshot) => {
+          const items = snapshot.docs.map((d) => ({
+            ...d.data(),
+            id: d.id,
+          }));
+          onAlerts(items);
+        },
+        (error) => {
+          try {
+            handleFirestoreError(error, OperationType.LIST, pathForOnSnapshot);
+          } catch {
+            // Logged structured error via handleFirestoreError; keep Admin UI resilient
+          }
+        }
+      );
+    } catch {
+      // Ignore if current Firebase user is a student rather than Firestore admin
+    }
+  });
+
+  return () => {
+    cancelled = true;
+    unsubscribeAuth();
+    if (unsubscribeSnapshot) {
+      unsubscribeSnapshot();
+    }
+  };
+}
+
+export async function markFirestoreProctorLogRead(id: string) {
+  if (!id || !auth.currentUser) return;
+  const path = `proctor_logs/${id}`;
+  try {
+    await updateDoc(doc(db, 'proctor_logs', id), { isRead: true });
+  } catch (error) {
+    console.warn(`Firestore proctor log update note (${path}):`, error);
+  }
+}
+
+export async function markAllFirestoreProctorLogsRead(ids: string[]) {
+  if (!ids.length || !auth.currentUser) return;
+  try {
+    const batch = writeBatch(db);
+    ids.slice(0, 50).forEach((id) => {
+      batch.update(doc(db, 'proctor_logs', id), { isRead: true });
+    });
+    await batch.commit();
+  } catch (error) {
+    console.warn('Firestore proctor logs batch update note:', error);
   }
 }
 

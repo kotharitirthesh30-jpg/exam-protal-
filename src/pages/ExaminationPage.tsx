@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { api, Question } from '../services/api.ts';
+import { persistProctorLogToFirestore } from '../services/firebase.ts';
 import { formatDuration } from '../utils/examScoring.ts';
 import { OrbitLogo } from '../components/OrbitLogo.tsx';
 import {
@@ -36,9 +37,20 @@ export const ExaminationPage: React.FC = () => {
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  const [tabSwitchWarnings, setTabSwitchWarnings] = useState(0);
+  const [cheatWarningModal, setCheatWarningModal] = useState<{
+    count: number;
+    message: string;
+  } | null>(null);
 
   // Sync answers with backend debounced
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastViolationAtRef = useRef<number>(0);
+  const isSubmittingRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    isSubmittingRef.current = submitting;
+  }, [submitting]);
 
   // Initialize or resume attempt
   useEffect(() => {
@@ -83,6 +95,99 @@ export const ExaminationPage: React.FC = () => {
 
     return () => clearInterval(timer);
   }, [secondsRemaining, attemptId, submitting]);
+
+  // Anti-cheat proctoring: detect tab switches & window focus loss once exam has started
+  useEffect(() => {
+    if (!attemptId || !exam?.id || loading || error) return;
+
+    let channel: BroadcastChannel | null = null;
+    try {
+      if (typeof BroadcastChannel !== 'undefined') {
+        channel = new BroadcastChannel('orbit_proctor_channel');
+      }
+    } catch {}
+
+    const triggerCheatAlert = (violationType: 'tab_switch' | 'window_blur') => {
+      if (isSubmittingRef.current) return;
+      const now = Date.now();
+      if (now - lastViolationAtRef.current < 1200) return;
+      lastViolationAtRef.current = now;
+
+      setTabSwitchWarnings((prev) => {
+        const nextCount = prev + 1;
+        setCheatWarningModal({
+          count: nextCount,
+          message:
+            violationType === 'tab_switch'
+              ? 'You switched away from the examination tab. This suspected cheating activity has been reported to the Exam Administrator.'
+              : 'You left the examination window. This suspected cheating activity has been reported to the Exam Administrator.',
+        });
+        return nextCount;
+      });
+
+      api
+        .reportProctorViolation({
+          attemptId,
+          examId: exam.id,
+          type: violationType,
+        })
+        .then((res) => {
+          if (typeof res?.violationCount === 'number') {
+            setTabSwitchWarnings(res.violationCount);
+          }
+          if (res?.alert) {
+            persistProctorLogToFirestore(res.alert);
+            try {
+              channel?.postMessage({ type: 'NEW_VIOLATION', alert: res.alert });
+              localStorage.setItem(
+                'orbit_last_violation_ping',
+                JSON.stringify({ id: res.alert.id, at: Date.now() })
+              );
+            } catch {}
+          }
+        })
+        .catch(() => {});
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden || document.visibilityState === 'hidden') {
+        triggerCheatAlert('tab_switch');
+      }
+    };
+
+    const handleWindowBlur = () => {
+      if (document.hidden || document.visibilityState === 'hidden') {
+        triggerCheatAlert('tab_switch');
+        return;
+      }
+      if (!document.hasFocus()) {
+        triggerCheatAlert('window_blur');
+        return;
+      }
+      setTimeout(() => {
+        if (document.hidden || !document.hasFocus()) {
+          triggerCheatAlert(document.hidden ? 'tab_switch' : 'window_blur');
+        }
+      }, 60);
+    };
+
+    const handlePageHide = () => {
+      triggerCheatAlert('tab_switch');
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleWindowBlur);
+    window.addEventListener('pagehide', handlePageHide);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleWindowBlur);
+      window.removeEventListener('pagehide', handlePageHide);
+      try {
+        channel?.close();
+      } catch {}
+    };
+  }, [attemptId, exam?.id, loading, error]);
 
   // Save answer locally & sync to server
   const handleSelectOption = (optionIndex: number) => {
@@ -230,8 +335,24 @@ export const ExaminationPage: React.FC = () => {
           <span>{formatDuration(secondsRemaining)}</span>
         </div>
 
-        {/* Fullscreen & Quick Help */}
+        {/* Proctoring Status, Fullscreen & Submit */}
         <div className="flex items-center gap-2">
+          <div
+            className={`hidden md:flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold ${
+              tabSwitchWarnings > 0
+                ? 'bg-rose-950/80 border-rose-500/60 text-rose-300 animate-pulse'
+                : 'bg-emerald-950/50 border-emerald-700/50 text-emerald-300'
+            }`}
+            title="Anti-cheat tab monitoring is active"
+          >
+            <ShieldAlert className="w-3.5 h-3.5" />
+            <span>
+              {tabSwitchWarnings > 0
+                ? `${tabSwitchWarnings} Tab Warning${tabSwitchWarnings > 1 ? 's' : ''} Reported`
+                : 'Proctoring Active'}
+            </span>
+          </div>
+
           <button
             onClick={toggleFullScreen}
             className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition"
@@ -520,6 +641,50 @@ export const ExaminationPage: React.FC = () => {
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab Switch / Cheating Warning Modal */}
+      {cheatWarningModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
+          <div className="max-w-md w-full rounded-3xl bg-slate-900 border-2 border-rose-500/70 p-6 sm:p-7 space-y-5 shadow-2xl shadow-rose-950/60">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-rose-500/20 border border-rose-500/50 flex items-center justify-center text-rose-400">
+                  <ShieldAlert className="w-6 h-6" />
+                </div>
+                <div>
+                  <span className="text-[11px] font-mono uppercase tracking-wider text-rose-400 font-bold">
+                    Proctoring Violation #{cheatWarningModal.count}
+                  </span>
+                  <h3 className="text-lg font-bold text-white">Tab Switch Detected!</h3>
+                </div>
+              </div>
+              <button
+                onClick={() => setCheatWarningModal(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white"
+                aria-label="Close warning"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-rose-950/50 border border-rose-500/40 text-xs text-rose-200 leading-relaxed">
+              {cheatWarningModal.message}
+            </div>
+
+            <p className="text-[11px] text-slate-400">
+              An instant notification has been sent to the Admin Console showing your Student ID, active paper, and violation timestamp. Please stay on this tab until you submit.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setCheatWarningModal(null)}
+              className="w-full py-3 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-500 transition shadow-lg shadow-rose-600/30 cursor-pointer"
+            >
+              I Understand — Return to Exam
+            </button>
           </div>
         </div>
       )}

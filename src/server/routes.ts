@@ -1,7 +1,9 @@
-import { Router, Request, Response, NextFunction } from 'express';
+import { Router } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
-import { OrbitDB, User, Exam, Question, ExamAttempt, ExamResult } from './db.ts';
+import { OrbitDB } from './db.ts';
+import type { User, Exam, Question, ExamAttempt, ExamResult, ProctorLog } from './db.ts';
 import { calculateExamScore, isExamAvailable } from '../utils/examScoring.ts';
 
 const router = Router();
@@ -920,6 +922,84 @@ router.delete('/admin/question-bank/:id', authenticate, requireAdmin, (req, res)
     return res.status(404).json({ error: 'Question not found' });
   }
   res.json({ message: 'Question removed from question bank' });
+});
+
+// ---------------- PROCTORING / CHEAT ALERT ROUTES ----------------
+
+router.post('/proctor/violation', authenticate, requireStudent, (req: AuthRequest, res) => {
+  const { attemptId, examId, type, message } = req.body;
+
+  if (!attemptId && !examId) {
+    return res.status(400).json({ error: 'Attempt ID or Exam ID is required.' });
+  }
+
+  let attempt: ExamAttempt | undefined;
+  if (attemptId) {
+    attempt = OrbitDB.findAttemptById(String(attemptId));
+  }
+  if (attempt && attempt.studentId !== req.user!.id) {
+    return res.status(403).json({ error: 'Unauthorized attempt reference.' });
+  }
+
+  const resolvedExamId = attempt?.examId || String(examId);
+  const exam = OrbitDB.findExamById(resolvedExamId);
+  const examTitle = exam?.title || 'Active Examination';
+
+  const resolvedAttemptId = attempt?.id || String(attemptId || `att_${resolvedExamId}_${req.user!.id}`);
+  const existingLogs = OrbitDB.getProctorLogsByAttempt(resolvedAttemptId);
+  const violationCount = existingLogs.length + 1;
+
+  const eventType: ProctorLog['type'] =
+    type === 'window_blur' || type === 'fullscreen_exit' ? type : 'tab_switch';
+
+  const severity: ProctorLog['severity'] =
+    violationCount >= 3 ? 'critical' : violationCount === 2 ? 'high' : 'high';
+
+  const alertMessage =
+    typeof message === 'string' && message.trim()
+      ? message.trim().slice(0, 300)
+      : `${req.user!.name} (${req.user!.codeId}) switched browser tab during "${examTitle}" — Suspected cheating in paper (Warning #${violationCount}).`;
+
+  const log: ProctorLog = {
+    id: `proc_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+    attemptId: resolvedAttemptId,
+    examId: resolvedExamId,
+    examTitle,
+    studentId: req.user!.id,
+    studentName: req.user!.name,
+    studentCodeId: req.user!.codeId,
+    studentEmail: req.user!.email,
+    type: eventType,
+    message: alertMessage,
+    severity,
+    violationCount,
+    isRead: false,
+    timestamp: new Date().toISOString(),
+  };
+
+  OrbitDB.addProctorLog(log);
+  res.status(201).json({ success: true, alert: log, violationCount });
+});
+
+router.get('/admin/proctor-alerts', authenticate, requireAdmin, (_req, res) => {
+  const logs = [...OrbitDB.getProctorLogs()].sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  );
+  const unreadCount = logs.filter((l) => !l.isRead).length;
+  res.json({ alerts: logs, unreadCount });
+});
+
+router.put('/admin/proctor-alerts/read-all', authenticate, requireAdmin, (_req, res) => {
+  OrbitDB.markAllProctorLogsRead();
+  res.json({ success: true });
+});
+
+router.put('/admin/proctor-alerts/:id/read', authenticate, requireAdmin, (req, res) => {
+  const updated = OrbitDB.markProctorLogRead(req.params.id);
+  if (!updated) {
+    return res.status(404).json({ error: 'Alert not found.' });
+  }
+  res.json({ success: true, alert: updated });
 });
 
 export default router;

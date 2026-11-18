@@ -10,10 +10,18 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
     function isAdmin() {
       return isSignedIn() && (
         exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
-        request.auth.token.email == 'kotharitirthesh30@gmail.com'
+        (request.auth.token.email_verified == true && request.auth.token.email == 'kotharitirthesh30@gmail.com')
       );
     }
 
@@ -21,33 +29,62 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function isValidProctorLog(data) {
+      return data.keys().hasAll(['id', 'examId', 'studentId', 'authUid', 'type', 'severity', 'timestamp', 'createdAt']) &&
+        data.keys().hasOnly([
+          'id', 'attemptId', 'examId', 'examTitle', 'studentId', 'studentName',
+          'studentCodeId', 'authUid', 'type', 'message', 'severity',
+          'violationCount', 'isRead', 'timestamp', 'createdAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.authUid is string && data.authUid == request.auth.uid && data.authUid.size() <= 128 &&
+        data.examId is string && data.examId.size() > 0 && data.examId.size() <= 128 &&
+        data.studentId is string && data.studentId.size() > 0 && data.studentId.size() <= 128 &&
+        (!('attemptId' in data) || (data.attemptId is string && data.attemptId.size() <= 128)) &&
+        (!('examTitle' in data) || (data.examTitle is string && data.examTitle.size() <= 200)) &&
+        (!('studentName' in data) || (data.studentName is string && data.studentName.size() <= 120)) &&
+        (!('studentCodeId' in data) || (data.studentCodeId is string && data.studentCodeId.size() <= 64)) &&
+        data.type in ['tab_switch', 'window_blur', 'fullscreen_exit'] &&
+        (!('message' in data) || (data.message is string && data.message.size() <= 500)) &&
+        data.severity in ['low', 'medium', 'high', 'critical'] &&
+        (!('violationCount' in data) || (data.violationCount is number && data.violationCount >= 1 && data.violationCount <= 1000)) &&
+        (!('isRead' in data) || data.isRead is bool) &&
+        data.timestamp is string && data.timestamp.size() > 0 && data.timestamp.size() <= 64;
+    }
+
     match /users/{userId} {
-      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow create: if isSignedIn() && request.auth.uid == userId;
-      allow update: if isSignedIn() && (request.auth.uid == userId || isAdmin());
-      allow delete: if isAdmin();
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isValidId(userId) && isOwner(userId);
+      allow update: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow delete: if isValidId(userId) && isAdmin();
     }
 
     match /admins/{adminId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow get: if isValidId(adminId) && (isOwner(adminId) || isAdmin());
+      allow list: if isAdmin();
+      allow write: if isValidId(adminId) && isAdmin();
     }
 
     match /exams/{examId} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin();
+      allow get: if isValidId(examId) && isSignedIn();
+      allow list: if isSignedIn();
+      allow write: if isValidId(examId) && isAdmin();
     }
 
     match /exam_results/{resultId} {
-      allow read: if isSignedIn() && (resource.data.studentId == request.auth.uid || isAdmin());
-      allow create: if isSignedIn() && request.resource.data.studentId == request.auth.uid;
-      allow update, delete: if isAdmin();
+      allow get: if isValidId(resultId) && isSignedIn() && (resource.data.studentId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.studentId == request.auth.uid || isAdmin());
+      allow create: if isValidId(resultId) && isSignedIn() && request.resource.data.studentId == request.auth.uid;
+      allow update, delete: if isValidId(resultId) && isAdmin();
     }
 
     match /proctor_logs/{logId} {
-      allow read: if isAdmin();
-      allow create: if isSignedIn();
-      allow update, delete: if isAdmin();
+      allow get: if isValidId(logId) && isAdmin();
+      allow list: if isAdmin();
+      allow create: if isVerifiedUser() && isValidId(logId) && isValidProctorLog(request.resource.data) && request.resource.data.createdAt == request.time;
+      allow update: if isAdmin() && isValidId(logId) && isValidProctorLog(request.resource.data) && request.resource.data.createdAt == resource.data.createdAt && request.resource.data.authUid == resource.data.authUid;
+      allow delete: if isValidId(logId) && isAdmin();
     }
   }
 }

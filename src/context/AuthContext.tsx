@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { api, setAuthToken, User } from '../services/api.ts';
+import { api, getAuthToken, setAuthToken, User } from '../services/api.ts';
 import { persistUserToFirestore } from '../services/firebase.ts';
 
 interface AuthContextType {
@@ -37,13 +37,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     async function loadUser() {
-      const token = localStorage.getItem('orbit_token');
+      const token = getAuthToken();
       if (!token) {
         setLoading(false);
         return;
       }
       try {
         const data = await api.getMe();
+        setAuthToken(token, data.user?.role);
         setUser(data.user);
         persistUserToFirestore(data.user);
       } catch (err) {
@@ -59,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (credentials: { identifier: string; password: string; expectedRole?: string }): Promise<User> => {
     const res = await api.login(credentials);
-    setAuthToken(res.token);
+    setAuthToken(res.token, res.user?.role);
     setUser(res.user);
     persistUserToFirestore(res.user);
     return res.user;
@@ -73,7 +74,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     expectedRole?: 'student' | 'admin';
   }): Promise<User> => {
     const res = await api.loginWithGoogle(googleData);
-    setAuthToken(res.token);
+    setAuthToken(res.token, res.user?.role);
     setUser(res.user);
     persistUserToFirestore(res.user);
     return res.user;
@@ -89,7 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const register = async (studentData: any): Promise<User> => {
     const res = await api.register(studentData);
-    setAuthToken(res.token);
+    setAuthToken(res.token, res.user?.role);
     setUser(res.user);
     persistUserToFirestore(res.user);
     return res.user;
@@ -104,14 +105,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     department?: string;
   }): Promise<User> => {
     const res = await api.registerAdmin(adminData);
-    setAuthToken(res.token);
+    setAuthToken(res.token, res.user?.role);
     setUser(res.user);
     persistUserToFirestore(res.user);
     return res.user;
   };
 
   const logout = () => {
-    setAuthToken(null);
+    setAuthToken(null, user?.role);
     setUser(null);
   };
 

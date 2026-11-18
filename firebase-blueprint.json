@@ -81,18 +81,23 @@
     },
     "ProctorLog": {
       "title": "ProctorLog",
-      "description": "Audit event recorded during examination monitoring.",
+      "description": "Audit event recorded when a student switches tabs or triggers proctoring alerts during an examination.",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "attemptId": { "type": "string" },
-        "examId": { "type": "string" },
-        "studentId": { "type": "string" },
-        "studentName": { "type": "string" },
-        "type": { "type": "string" },
-        "message": { "type": "string" },
+        "id": { "type": "string", "maxLength": 128 },
+        "attemptId": { "type": "string", "maxLength": 128 },
+        "examId": { "type": "string", "maxLength": 128 },
+        "examTitle": { "type": "string", "maxLength": 200 },
+        "studentId": { "type": "string", "maxLength": 128 },
+        "studentName": { "type": "string", "maxLength": 120 },
+        "studentCodeId": { "type": "string", "maxLength": 64 },
+        "authUid": { "type": "string", "maxLength": 128 },
+        "type": { "type": "string", "enum": ["tab_switch", "window_blur", "fullscreen_exit"] },
+        "message": { "type": "string", "maxLength": 500 },
         "severity": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
-        "timestamp": { "type": "string" }
+        "violationCount": { "type": "number" },
+        "isRead": { "type": "boolean" },
+        "timestamp": { "type": "string", "maxLength": 64 }
       },
       "required": ["id", "examId", "studentId", "type", "severity", "timestamp"]
     }
